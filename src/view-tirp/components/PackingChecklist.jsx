@@ -18,9 +18,11 @@ function PackingChecklist({ trip, extras, extrasLoading, extrasError }) {
       if (next.has(item)) next.delete(item)
       else next.add(item)
       if (trip?.id) {
-        updateTrip(trip.id, (t) => ({
-          extras: { ...t.extras, packingChecklistChecked: Array.from(next) },
-        }))
+        updateTrip(trip.id, {
+          extras: { ...trip.extras, packingChecklistChecked: Array.from(next) },
+        }).catch((error) => {
+          console.error('Unable to save packing checklist:', error)
+        })
       }
       return next
     })

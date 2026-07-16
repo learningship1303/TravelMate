@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { Check, Copy, Mic, Pause, Play, Send, Square, Volume2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { createAssistantSession } from '@/service/AIModal'
+import { createAssistantSession, getFriendlyAiErrorMessage } from '@/service/AIModal'
 import { updateTrip } from '@/service/tripStorage'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis'
@@ -119,9 +119,11 @@ function TripAssistant({ trip }) {
 
   const persist = (nextMessages, nextLanguage) => {
     if (!trip?.id) return
-    updateTrip(trip.id, (current) => ({
-      assistant: { ...current.assistant, messages: nextMessages, language: nextLanguage },
-    }))
+    updateTrip(trip.id, {
+      assistant: { ...trip.assistant, messages: nextMessages, language: nextLanguage },
+    }).catch((error) => {
+      console.error('Unable to save conversation:', error)
+    })
   }
 
   const sendMessage = async (rawText, { fromVoice = false } = {}) => {
@@ -160,7 +162,7 @@ function TripAssistant({ trip }) {
       }
     } catch (err) {
       console.error(err)
-      toast(err.message || 'Unable to reach the assistant right now')
+      toast(getFriendlyAiErrorMessage(err))
     } finally {
       setIsStreaming(false)
       setStreamingText('')

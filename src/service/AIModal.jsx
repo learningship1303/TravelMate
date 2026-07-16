@@ -1,5 +1,16 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+export function getFriendlyAiErrorMessage(error) {
+  const raw = error?.message || "";
+  if (raw.includes("429") || /quota/i.test(raw)) {
+    return "TravelMate AI is getting a lot of requests right now and hit today's usage limit. Please try again in a few minutes, or later today.";
+  }
+  if (raw.length > 160 || raw.startsWith("[GoogleGenerativeAI Error]")) {
+    return "Something went wrong talking to the AI. Please try again.";
+  }
+  return raw || "Something went wrong talking to the AI. Please try again.";
+}
+
   const generationConfig = {
     temperature: 1,
     topP: 0.95,

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { createChatSession } from '@/service/AIModal'
+import { createChatSession, getFriendlyAiErrorMessage } from '@/service/AIModal'
 import { FcGoogle } from 'react-icons/fc'
 import {
   Dialog,
@@ -18,8 +18,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useGoogleLogin } from '@react-oauth/google'
-import axios from 'axios'
 import { saveTrip } from '@/service/tripStorage'
+import { bridgeGoogleAccessToken, useAuthUser } from '@/service/firebaseAuth'
 import { DestinationAutocomplete } from '@/components/custom/DestinationAutocomplete'
 import { CURRENCIES } from '@/service/currency'
 
@@ -41,6 +41,7 @@ const CreateTrip = () => {
   const [region, setRegion] = useState('india')
   const [openDialog, setOpenDialog] = useState(false)
   const [loading, setLoading] = useState(false)
+  const { user } = useAuthUser()
 
   const handleInputChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -63,9 +64,9 @@ const CreateTrip = () => {
     setFormData((prev) => ({ ...prev, location: destination, coordinates: undefined }))
   }
 
-  const OnGenerateTrip = async () => {
-    const user = localStorage.getItem('user')
-    if (!user) {
+  const OnGenerateTrip = async (overrideUser) => {
+    const activeUser = overrideUser || user
+    if (!activeUser) {
       setOpenDialog(true)
       return
     }
@@ -100,21 +101,21 @@ const CreateTrip = () => {
       const chatSession = createChatSession()
       const result = await chatSession.sendMessage(FINAL_PROMPT)
       const tripText = result.response.text().replace(/^```json\s*|\s*```$/g, '')
-      await SaveAiTrip(tripText)
+      await SaveAiTrip(tripText, activeUser)
     } catch (error) {
       console.error(error)
-      toast(error.message || 'Unable to generate trip')
+      toast(getFriendlyAiErrorMessage(error))
       setLoading(false)
     }
   }
 
-  const SaveAiTrip = async (TripData) => {
-    const user = JSON.parse(localStorage.getItem('user'))
+  const SaveAiTrip = async (TripData, activeUser) => {
     const docId = Date.now().toString()
-    saveTrip({
+    await saveTrip({
       userSelection: formData,
       tripData: JSON.parse(TripData),
-      userEmail: user?.email,
+      userEmail: activeUser?.email,
+      ownerUid: activeUser?.uid,
       id: docId,
     })
     setLoading(false)
@@ -127,20 +128,14 @@ const CreateTrip = () => {
   })
 
   const GetUserProfile = (tokenInfo) => {
-    axios
-      .get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenInfo.access_token}`, {
-        headers: {
-          Authorization: `Bearer ${tokenInfo.access_token}`,
-          Accept: 'application/json',
-        },
-      })
-      .then((resp) => {
-        localStorage.setItem('user', JSON.stringify(resp.data))
+    bridgeGoogleAccessToken(tokenInfo.access_token)
+      .then((credential) => {
         setOpenDialog(false)
-        OnGenerateTrip()
+        OnGenerateTrip(credential.user)
       })
       .catch((error) => {
-        console.error('Error fetching user profile: ', error)
+        console.error('Error signing in: ', error)
+        toast('Unable to sign in. Please try again.')
       })
   }
 
@@ -320,7 +315,7 @@ const CreateTrip = () => {
         </div>
 
         <div className="my-12 flex justify-end">
-          <Button disabled={loading} onClick={OnGenerateTrip} size="lg" className="shadow-soft rounded-full px-8">
+          <Button disabled={loading} onClick={() => OnGenerateTrip()} size="lg" className="shadow-soft rounded-full px-8">
             {loading ? (
               <>
                 <Loader2 className="size-5 animate-spin" />

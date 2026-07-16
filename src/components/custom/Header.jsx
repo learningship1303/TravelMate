@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { googleLogout, useGoogleLogin } from '@react-oauth/google'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { FcGoogle } from 'react-icons/fc'
-import axios from 'axios'
+import { bridgeGoogleAccessToken, signOutUser, useAuthUser } from '@/service/firebaseAuth'
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -17,7 +17,7 @@ const navLinks = [
 ]
 
 function Header() {
-  const user = JSON.parse(localStorage.getItem('user'))
+  const { user } = useAuthUser()
   const [openDialog, setOpenDialog] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const googleOAuthConfigured = Boolean(import.meta.env.VITE_GOOGLE_AUTH_CLIENT_ID)
@@ -29,27 +29,18 @@ function Header() {
   })
 
   const GetUserProfile = (tokenInfo) => {
-    axios
-      .get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenInfo.access_token}`, {
-        headers: {
-          Authorization: `Bearer ${tokenInfo.access_token}`,
-          Accept: 'application/json',
-        },
-      })
-      .then((resp) => {
-        localStorage.setItem('user', JSON.stringify(resp.data))
+    bridgeGoogleAccessToken(tokenInfo.access_token)
+      .then(() => {
         setOpenDialog(false)
-        window.location.reload()
       })
       .catch((error) => {
-        console.error('Error fetching user profile: ', error)
+        console.error('Error signing in: ', error)
       })
   }
 
   const logout = () => {
     googleLogout()
-    localStorage.clear()
-    window.location.reload()
+    signOutUser()
   }
 
   return (
@@ -86,12 +77,12 @@ function Header() {
               <Popover>
                 <PopoverTrigger>
                   <Avatar className="border-primary/30 size-9 border-2 transition-transform hover:scale-105">
-                    <AvatarImage src={user?.picture} alt={user?.name} />
-                    <AvatarFallback>{user?.name?.[0] || 'U'}</AvatarFallback>
+                    <AvatarImage src={user?.photoURL} alt={user?.displayName} />
+                    <AvatarFallback>{user?.displayName?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-44 rounded-xl p-2">
-                  <p className="truncate px-2 py-1 text-sm font-medium">{user?.name}</p>
+                  <p className="truncate px-2 py-1 text-sm font-medium">{user?.displayName}</p>
                   <button
                     className="focus-ring hover:bg-accent/10 text-destructive mt-1 w-full rounded-md px-2 py-1.5 text-left text-sm"
                     onClick={logout}

@@ -5,26 +5,26 @@ import { MapPinned, Plus } from 'lucide-react'
 import UserTripCardItem from './components/UserTripCardItem'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { getTripsByUserEmail } from '@/service/tripStorage'
+import { getTripsByOwner } from '@/service/tripStorage'
+import { useAuthUser } from '@/service/firebaseAuth'
 
 function MyTrips() {
   const navigate = useNavigate()
+  const { user, loading: authLoading } = useAuthUser()
   const [userTrips, setUserTrips] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    GetUserTrips()
-  }, [])
-
-  const GetUserTrips = async () => {
-    const user = JSON.parse(localStorage.getItem('user'))
+    if (authLoading) return
     if (!user) {
       navigate('/')
       return
     }
-    setUserTrips(getTripsByUserEmail(user?.email))
-    setLoading(false)
-  }
+    getTripsByOwner(user.uid).then((trips) => {
+      setUserTrips(trips)
+      setLoading(false)
+    })
+  }, [authLoading, user, navigate])
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8">

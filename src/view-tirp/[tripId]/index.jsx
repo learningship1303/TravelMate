@@ -48,13 +48,27 @@ const Viewtrip = () => {
 
   useEffect(() => {
     if (!tripId) return
-    const savedTrip = getTripById(tripId)
-    if (savedTrip) {
-      setTrip(savedTrip)
-      setStatus('found')
-    } else {
-      setStatus('not-found')
-      toast('No trip found')
+    let cancelled = false
+    getTripById(tripId)
+      .then((savedTrip) => {
+        if (cancelled) return
+        if (savedTrip) {
+          setTrip(savedTrip)
+          setStatus('found')
+        } else {
+          setStatus('not-found')
+          toast('No trip found')
+        }
+      })
+      .catch((error) => {
+        // Firestore rejects reads for trips you don't own (security rules) the
+        // same way a missing document would look — show the same not-found state
+        // rather than leaking whether the trip exists to an unauthorized viewer.
+        console.error('Unable to load trip:', error)
+        if (!cancelled) setStatus('not-found')
+      })
+    return () => {
+      cancelled = true
     }
   }, [tripId])
 
@@ -64,8 +78,10 @@ const Viewtrip = () => {
     setExtrasError(null)
     generateTripExtras(tripToLoad)
       .then((extras) => {
-        const updated = updateTrip(tripToLoad.id, { extras })
-        setTrip(updated)
+        setTrip((prev) => (prev ? { ...prev, extras } : prev))
+        updateTrip(tripToLoad.id, { extras }).catch((error) => {
+          console.error('Unable to save trip extras:', error)
+        })
       })
       .catch((error) => {
         console.error('Unable to generate trip extras:', error)

@@ -1,33 +1,23 @@
-const STORAGE_KEY = 'travelmate_ai_trips'
+import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
+import { db } from './firebaseConfig'
 
-const readTrips = () => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
-  } catch (error) {
-    console.error('Unable to read saved trips:', error)
-    return []
-  }
+const trips = collection(db, 'trips')
+
+export const saveTrip = async (trip) => {
+  await setDoc(doc(trips, trip.id), { ...trip, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
 }
 
-export const saveTrip = (trip) => {
-  const trips = readTrips()
-  const nextTrips = [trip, ...trips.filter((item) => item.id !== trip.id)]
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTrips))
+export const getTripById = async (tripId) => {
+  const snap = await getDoc(doc(trips, tripId))
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null
 }
 
-export const getTripById = (tripId) => {
-  return readTrips().find((trip) => trip.id === tripId)
+export const getTripsByOwner = async (uid) => {
+  if (!uid) return []
+  const snap = await getDocs(query(trips, where('ownerUid', '==', uid), orderBy('createdAt', 'desc')))
+  return snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
 }
 
-export const getTripsByUserEmail = (email) => {
-  return readTrips().filter((trip) => trip.userEmail === email)
-}
-
-export const updateTrip = (tripId, patch) => {
-  const trips = readTrips()
-  const nextTrips = trips.map((trip) =>
-    trip.id === tripId ? { ...trip, ...(typeof patch === 'function' ? patch(trip) : patch) } : trip
-  )
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTrips))
-  return nextTrips.find((trip) => trip.id === tripId)
+export const updateTrip = async (tripId, patch) => {
+  await updateDoc(doc(trips, tripId), { ...patch, updatedAt: serverTimestamp() })
 }
