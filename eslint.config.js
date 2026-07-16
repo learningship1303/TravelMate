@@ -23,7 +23,9 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // 'motion' is exempted because espree's scope analysis doesn't track
+      // JSXMemberExpression tag usage (e.g. <motion.div>) without eslint-plugin-react.
+      'no-unused-vars': ['error', { varsIgnorePattern: '^([A-Z_]|motion)' }],
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

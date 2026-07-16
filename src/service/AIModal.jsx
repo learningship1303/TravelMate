@@ -1,21 +1,26 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-  const apiKey = import.meta.env.VITE_GOOGLE_GEMINI_AI_API_KEY;
-  const genAI = new GoogleGenerativeAI(apiKey);
-  
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-  }); 
-  
   const generationConfig = {
     temperature: 1,
     topP: 0.95,
     topK: 64,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 32768,
     responseMimeType: "application/json",
   };
   
-  export const chatSession = model.startChat({
+  export const createChatSession = () => {
+    const apiKey = import.meta.env.VITE_GOOGLE_GEMINI_AI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("Missing VITE_GOOGLE_GEMINI_AI_API_KEY. Add it to your .env file.");
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
+
+    return model.startChat({
       generationConfig,
       history: [
         {
@@ -32,3 +37,67 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
         },
       ],
     });
+  }
+
+  export const createAssistantSession = (trip, priorMessages = [], language = 'English') => {
+    const apiKey = import.meta.env.VITE_GOOGLE_GEMINI_AI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("Missing VITE_GOOGLE_GEMINI_AI_API_KEY. Add it to your .env file.");
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
+
+    const tripContext = JSON.stringify(
+      {
+        destination: trip?.userSelection?.location,
+        days: trip?.userSelection?.noOfDays,
+        budget: trip?.userSelection?.budget,
+        travelers: trip?.userSelection?.traveler,
+        hotels: trip?.tripData?.hotel_options,
+        itinerary: trip?.tripData?.itinerary,
+      },
+      null,
+      2
+    );
+
+    const systemPrompt = `You are TravelMate AI, a friendly, knowledgeable conversational travel assistant embedded in a trip-planning app.
+The traveler is looking at this trip you already generated for them:
+${tripContext}
+
+Help them with questions, suggestions, and adjustments to this plan. Be concise and conversational, like a helpful human travel expert texting back and forth - not a formal report.
+Never use markdown symbols like **, #, or backtick code fences. Plain text only, with normal punctuation and line breaks.
+Respond in ${language} unless the traveler asks you to switch languages.`;
+
+    const seedHistory = [
+      {
+        role: "user",
+        parts: [{ text: systemPrompt }],
+      },
+      {
+        role: "model",
+        parts: [
+          {
+            text: `Got it! I've got the full plan for your ${trip?.userSelection?.noOfDays || ''}-day trip to ${trip?.userSelection?.location || 'your destination'}. What would you like to know?`,
+          },
+        ],
+      },
+      ...priorMessages.map((message) => ({
+        role: message.role,
+        parts: [{ text: message.text }],
+      })),
+    ];
+
+    return model.startChat({
+      generationConfig: {
+        temperature: 0.9,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 2048,
+      },
+      history: seedHistory,
+    });
+  }

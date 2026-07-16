@@ -7,14 +7,24 @@ import {getFirestore} from "firebase/firestore"
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const requiredEnv = (key) => {
+  const value = import.meta.env[key];
+
+  if (!value) {
+    console.warn(`Missing ${key}. Firebase is optional while local trip storage is enabled.`);
+  }
+
+  return value;
+};
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDdzpkMAcjMg1-SFFMPIiZ7_Om9-ML1qFY",
-  authDomain: "aitripplanner-abda6.firebaseapp.com",
-  projectId: "aitripplanner-abda6",
-  storageBucket: "aitripplanner-abda6.firebasestorage.app",
-  messagingSenderId: "640865070082",
-  appId: "1:640865070082:web:b0620bde59d8ebbc418b1b",
-  measurementId: "G-LVKYLPDCR9"
+  apiKey: requiredEnv("VITE_FIREBASE_API_KEY"),
+  authDomain: requiredEnv("VITE_FIREBASE_AUTH_DOMAIN"),
+  projectId: requiredEnv("VITE_FIREBASE_PROJECT_ID"),
+  storageBucket: requiredEnv("VITE_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: requiredEnv("VITE_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: requiredEnv("VITE_FIREBASE_APP_ID"),
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

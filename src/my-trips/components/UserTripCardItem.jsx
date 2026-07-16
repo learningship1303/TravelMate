@@ -1,35 +1,34 @@
-import { GetPlaceDetails, PHOTO_REF_URL } from '@/service/GlobalApi';
-import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'
+import { Calendar, Wallet } from 'lucide-react'
+import { SmartImage } from '@/components/custom/SmartImage'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 function UserTripCardItem({ trip }) {
-  const [photoUrl, setPhotoUrl] = useState();
-
-  useEffect(() => {
-    trip && GetPlacePhoto();
-  }, [trip])
-
-  const GetPlacePhoto = async () => {
-    const data = {
-      textQuery: trip?.userSelection?.location
-    }
-    const result = await GetPlaceDetails(data).then(resp => {
-      // console.log(resp.data.places[0].photos[3].name)
-      const PhotoUrl = PHOTO_REF_URL.replace('{NAME}', resp.data.places[0].photos[3].name)
-      setPhotoUrl(PhotoUrl)
-    })
-  }
-
   return (
-    <Link to={`/view-trip/${trip?.id}`}>
-      <div className='hover:scale-105 transition-all'>
-        <img src={photoUrl ? photoUrl : '/placeholder.jpg'} alt="" className='object-cover rounded-xl h-[220px]' />
-        <div>
-          <h2 className='font-bold text-lg'>{trip?.userSelection?.location}</h2>
-          <h2 className='text-sm text-gray-500'>{trip?.userSelection?.noOfDays} Days trip with {trip?.userSelection?.budget} budget. </h2>
+    <Link to={`/view-trip/${trip?.id}`} className="group block">
+      <Card className="shadow-soft hover:shadow-soft-lg gap-0 overflow-hidden p-0 transition-all group-hover:-translate-y-1">
+        <SmartImage
+          query={trip?.userSelection?.location}
+          alt={trip?.userSelection?.location}
+          className="h-[200px] w-full"
+          imgClassName="transition-transform duration-500 group-hover:scale-110"
+        />
+        <div className="space-y-2 p-4">
+          <h2 className="font-display truncate font-semibold">{trip?.userSelection?.location}</h2>
+          <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+            <Badge variant="secondary" className="gap-1">
+              <Calendar className="size-3" />
+              {trip?.userSelection?.noOfDays} days
+            </Badge>
+            <Badge variant="secondary" className="gap-1">
+              <Wallet className="size-3" />
+              {trip?.userSelection?.budget}
+            </Badge>
+          </div>
         </div>
-      </div>
-    </Link >
+      </Card>
+    </Link>
   )
 }
 

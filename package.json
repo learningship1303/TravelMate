@@ -1,9 +1,9 @@
 {
-  "name": "ai-trip-planner",
+  "name": "travelcopilot-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "A smart AI-powered trip planner web app built and customized by Adhya Singh. Plan your trips, discover places, and manage your journeys with a modern, interactive UI.",
+  "description": "A GenAI-powered travel copilot for itinerary generation, multilingual content creation, operational travel workflows, and voice-based trip guidance.",
   "author": "Adhya Singh",
   "scripts": {
     "dev": "vite",
@@ -14,9 +14,13 @@
   "dependencies": {
     "@google/genai": "^1.5.1",
     "@google/generative-ai": "^0.24.1",
+    "@radix-ui/react-accordion": "^1.2.16",
+    "@radix-ui/react-avatar": "^1.2.2",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.17",
+    "@radix-ui/react-tooltip": "^1.2.12",
     "@react-google-maps/api": "^2.20.6",
     "@react-oauth/google": "^0.12.2",
     "@tailwindcss/vite": "^4.1.10",
@@ -24,6 +28,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^11.9.1",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^0.516.0",
     "mime": "^4.0.7",
     "next-themes": "^0.4.6",
