@@ -1,42 +1,143 @@
-# TravelMate_AI
+# TravelMate AI
 
-**Created and customized as a personal GenAI portfolio project**
+**AI-powered trip planning, redesigned and rebuilt as a production-grade travel product.**
 
-TravelMate_AI is a GenAI-powered travel assistant for itinerary generation, multilingual content creation, operational travel workflows, and voice-based trip guidance. It uses Gemini AI to create personalized travel plans and Copilot-style outputs such as summaries, packing lists, travel blogs, social captions, and trip operations checklists.
+🔗 **Live app:** [https://travel-mate-liart.vercel.app](https://travel-mate-liart.vercel.app)
+
+TravelMate AI turns a destination, a trip length, and a budget into a full, personalized itinerary — real hotels, a day-by-day plan, an interactive map, live weather, a budget estimate that checks itself against what you're willing to spend, and a conversational voice AI assistant you can ask follow-up questions. Trips sync across devices for the signed-in Google account that created them.
+
+---
+
+## Project Story (STAR)
+
+**Situation**
+The project started as a functional but bare-bones AI trip planner — a working Gemini-powered itinerary generator wrapped in default Tailwind styling, a destination search box that froze while typing, a single placeholder image per page, no real cross-device data persistence (everything lived in one browser's `localStorage`, with no ownership checks on who could view a trip), and a "copilot" panel that could only run one-shot content actions with no memory between clicks.
+
+**Task**
+Redesign and productionize the entire application to feel like a real, launch-ready travel product — comparable to Airbnb or Google Travel — without losing any of the working AI functionality underneath it: a premium visual design system, real destination photography everywhere, fast and reliable search, a genuinely rich trip page, a true conversational voice AI assistant, verified accessibility and responsiveness, and durable data storage that follows a user across devices — then get it live on a real production URL.
+
+**Action**
+Delivered in five phases plus targeted follow-ups, each scoped and verified independently rather than shipped as one untested pile of changes:
+- Built a real OKLCH-based design system (light + dark), replaced the laggy native autocomplete with a debounced, keyboard-navigable destination search backed by the Places API, and wired in a resilient real-image pipeline (Wikimedia Commons → Google Places Photos fallback chain) used everywhere from the homepage hero to hotel cards.
+- Rebuilt the trip page into hero carousel, interactive Google Map with day-by-day routing, an Open-Meteo weather widget, a currency-aware budget estimate that checks itself against an optional target budget, AI-generated packing lists/local tips/emergency info, and tabbed hotels/itinerary/restaurant sections.
+- Replaced the one-shot content generator with a real conversational AI assistant: streaming Gemini responses, a typing indicator, Web Speech API voice input and multi-language text-to-speech with play/pause/resume/stop and speed/voice controls, and persistent per-trip conversation memory.
+- Ran real, tool-verified accessibility (axe-core) and responsive (multi-breakpoint) audits instead of guessing, and fixed every violation found — missing landmarks, insufficient color contrast, missing focus states, and a missing 404 page.
+- Migrated trip storage from browser-only `localStorage` to Firestore, bridging the existing Google sign-in into a real Firebase Auth session so security rules could enforce that a trip is only ever readable or writable by the account that created it — giving genuine cross-device sync where there was none before.
+- Deployed to Vercel with a connected GitHub repo for continuous deployment, and worked through the full chain of real production configuration this requires: Google Cloud API restrictions and referrer allowlists, OAuth authorized origins, and Firebase Authentication provider setup — debugging each with actual browser network traces rather than trial and error.
+
+**Result**
+A fully live, publicly deployed production application with every feature above working end-to-end, verified by driving the real deployed site rather than assuming it worked: successful Google sign-in, itinerary generation, cross-device Firestore-backed trip sync enforced by security rules, a clean accessibility audit, and zero console errors across the core pages. Along the way, several real bugs were found and fixed through this same verification-first approach — a voice-selector bug where TTS silently ignored the chosen voice, raw API error objects being dumped straight into the UI, and a trip-length validation gap that silently allowed invalid input.
+
+---
 
 ## Features
-- AI-powered trip planning and recommendations using Gemini
-- Multilingual content generation for European and Indian languages
-- Text-to-Speech itinerary narration with language-specific voice codes
-- Copilot tools for summaries, packing lists, travel blogs, captions, and operations checklists
-- Google login, Google Places autocomplete, and destination photo discovery
-- Local browser trip storage and saved-trip management with no paid database required
-- Built with React, Vite, Tailwind CSS, Firebase, Gemini, and Google APIs
 
-## GenAI Workflow
-1. User selects destination, days, budget, and traveler type.
-2. Gemini generates a structured JSON itinerary.
-3. The trip is saved in browser localStorage.
-4. The trip detail page displays hotels and daily places to visit.
-5. The GenAI Copilot panel creates multilingual content and speech-ready travel guidance.
-6. Browser Text-to-Speech reads generated content aloud in the selected language.
+**Homepage & Search**
+- Full design system with light/dark support, animated hero, trending destinations, feature highlights, and FAQ
+- Debounced, keyboard-navigable destination autocomplete with live thumbnails (no typing lag)
+- Route-level page transitions and scroll-reveal animations throughout (Framer Motion)
 
-## Supported Voice Languages
-English, German, French, Spanish, Italian, Portuguese, Hindi, Tamil, Telugu, Malayalam, Kannada, and Marathi.
+**Trip Planning**
+- Gemini-generated itineraries: hotels, day-by-day plans, ticket pricing, ratings, and images
+- Adjustable trip length (up to 30 days) and an optional exact target budget with currency selection
+- Friendly, specific error handling (e.g. AI quota limits) instead of raw API error dumps
+
+**Trip Page**
+- Hero image carousel sourced from real destination photography
+- Interactive Google Map with hotel/day markers, day filtering, and straight-line distance
+- Live weather (Open-Meteo) and a currency-converting budget estimate with a within/over-budget verdict
+- AI-generated packing checklist (with persistent checkboxes), local tips, emergency info, and best-time-to-visit
+- Tabbed hotels / itinerary / restaurant recommendations
+
+**Conversational AI Assistant**
+- Real chat thread with streaming replies and a typing indicator, not one-shot actions
+- Voice input (Web Speech API) and multi-language text-to-speech with play/pause/resume/stop and adjustable speed/voice
+- Persistent per-trip conversation memory
+
+**Accounts & Sync**
+- Google sign-in, bridged into Firebase Auth for secure, per-user Firestore access
+- Trips sync across devices and browsers for the signed-in account; Firestore security rules enforce that only the creator can read or write a trip
+
+**Quality**
+- Real axe-core accessibility audits (not manual guessing) with fixes applied
+- Verified responsive layout at mobile/tablet/desktop breakpoints
+- Styled 404 page, error boundaries, and empty/loading states throughout
+
+---
+
+## Tech Stack
+
+- **Frontend:** React 18, Vite, React Router, Tailwind CSS v4, Framer Motion, Radix UI primitives
+- **AI:** Google Gemini (`@google/generative-ai`) — itinerary generation, trip extras, and the streaming conversational assistant
+- **Data & Auth:** Firebase Firestore (trip storage) + Firebase Auth bridged from Google Sign-In (`@react-oauth/google`)
+- **Maps & Places:** Google Maps JavaScript API, Google Places API (New)
+- **Other APIs:** Open-Meteo (weather, free/no key), Wikimedia Commons (destination imagery, free/no key), open.er-api.com (currency exchange rates, free/no key)
+- **Voice:** Browser Web Speech API (`SpeechRecognition` + `speechSynthesis`)
+- **Deployment:** Vercel, continuous deployment from GitHub
+
+---
 
 ## Getting Started
-1. Clone the repository
-2. Create a `.env` file from `.env.example`
-3. Add your own Google OAuth, Google Places, and Gemini API keys
-4. Install dependencies: `npm install`
-5. Start the development server: `npm run dev`
 
-## Required Environment Variables
+```bash
+git clone <this-repo>
+cd ai_trip_plannerr-main
+npm install
+cp .env.example .env   # then fill in your own keys — see below
+npm run dev
+```
+
+### Required environment variables
+
 ```txt
 VITE_GOOGLE_AUTH_CLIENT_ID=
 VITE_GOOGLE_PLACE_API_KEY=
 VITE_GOOGLE_GEMINI_AI_API_KEY=
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_FIREBASE_MEASUREMENT_ID=
 ```
 
+### Google Cloud & Firebase setup (required for a working deploy)
+
+This app touches enough Google services that getting a fresh environment fully working takes a few real configuration steps beyond just the API keys above:
+
+1. **Enable both "Places API (New)" and "Maps JavaScript API"** on your Google Cloud project — they're separate products from the legacy "Places API" and won't work without being explicitly enabled.
+2. **Add your app's origin(s)** (e.g. `http://localhost:5173`, your production domain) to:
+   - The Google API key's **Application restrictions** (HTTP referrers) — use the `/*` wildcard form, e.g. `https://your-domain.com/*`
+   - The OAuth Client ID's **Authorised JavaScript origins** — the exact origin only, **no path, no trailing slash**
+3. **In Firebase Console → Authentication:** click "Get started" if you haven't already, then enable **Google** as a sign-in provider. Under that provider's settings, expand **"Whitelist client IDs from external projects"** and add your `VITE_GOOGLE_AUTH_CLIENT_ID` — this app signs in with its own pre-existing Google OAuth client rather than one Firebase auto-generates, so Firebase won't trust the bridged credential without this.
+4. **In Firebase Console → Firestore Database:** create the database (production mode), then publish these security rules:
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /trips/{tripId} {
+         allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+         allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerUid;
+       }
+     }
+   }
+   ```
+5. If deploying to Vercel (or similar), remember environment variables are **per-project** — a new Vercel project won't inherit variables from another one, and changes to them require a redeploy since Vite inlines them at build time, not runtime.
+
+---
+
+## How It Works
+
+1. User signs in with Google (bridged into a Firebase Auth session).
+2. User picks a destination, trip length, budget, and travelers on the Create Trip page.
+3. Gemini generates a structured JSON itinerary — hotels, day-by-day plan, pricing, ratings.
+4. The trip is saved to Firestore, owned by the signed-in user's UID.
+5. The trip page loads real images, live weather, a Google Map, and a budget estimate, then makes one additional Gemini call to generate packing/tips/restaurants/emergency info (cached back onto the trip so it's only generated once).
+6. The Trip Assistant lets the user ask follow-up questions in a real streaming conversation, with optional voice input/output, and that conversation is persisted to the same trip document.
+
+---
+
 ## Ownership Note
-All API configuration must come from your own `.env` file. No Google OAuth client, Places key, or Gemini key from another person should be hardcoded in the source code.
+
+All API configuration comes from your own `.env` file. No Google OAuth client, Places key, Gemini key, or Firebase project belonging to anyone else should be hardcoded into the source code.
