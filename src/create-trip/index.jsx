@@ -96,15 +96,29 @@ const CreateTrip = () => {
       FINAL_PROMPT += ` The traveler's target total budget for the entire trip (all days, hotel, and activities combined) is approximately ${targetAmount} ${formData.targetBudgetCurrency}. Please plan within this budget where realistically possible.`
     }
 
+    setLoading(true)
+
+    let tripText
     try {
-      setLoading(true)
       const chatSession = createChatSession()
       const result = await chatSession.sendMessage(FINAL_PROMPT)
-      const tripText = result.response.text().replace(/^```json\s*|\s*```$/g, '')
-      await SaveAiTrip(tripText, activeUser)
+      tripText = result.response.text().replace(/^```json\s*|\s*```$/g, '')
     } catch (error) {
       console.error(error)
       toast(getFriendlyAiErrorMessage(error))
+      setLoading(false)
+      return
+    }
+
+    try {
+      await SaveAiTrip(tripText, activeUser)
+    } catch (error) {
+      console.error(error)
+      toast(
+        error?.code === 'permission-denied'
+          ? "Couldn't save your trip — please sign out and back in, then try again."
+          : "Couldn't save your trip. Please try again."
+      )
       setLoading(false)
     }
   }
