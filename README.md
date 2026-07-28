@@ -8,15 +8,13 @@ TravelMate AI turns a destination, a trip length, and a budget into a full, pers
 
 ---
 
-## Project Story (STAR)
+## Project 
 
-**Situation**
+
 The project started as a functional but bare-bones AI trip planner — a working Gemini-powered itinerary generator wrapped in default Tailwind styling, a destination search box that froze while typing, a single placeholder image per page, no real cross-device data persistence (everything lived in one browser's `localStorage`, with no ownership checks on who could view a trip), and a "copilot" panel that could only run one-shot content actions with no memory between clicks.
 
-**Task**
 Redesign and productionize the entire application to feel like a real, launch-ready travel product — comparable to Airbnb or Google Travel — without losing any of the working AI functionality underneath it: a premium visual design system, real destination photography everywhere, fast and reliable search, a genuinely rich trip page, a true conversational voice AI assistant, verified accessibility and responsiveness, and durable data storage that follows a user across devices — then get it live on a real production URL.
 
-**Action**
 Delivered in five phases plus targeted follow-ups, each scoped and verified independently rather than shipped as one untested pile of changes:
 - Built a real OKLCH-based design system (light + dark), replaced the laggy native autocomplete with a debounced, keyboard-navigable destination search backed by the Places API, and wired in a resilient real-image pipeline (Wikimedia Commons → Google Places Photos fallback chain) used everywhere from the homepage hero to hotel cards.
 - Rebuilt the trip page into hero carousel, interactive Google Map with day-by-day routing, an Open-Meteo weather widget, a currency-aware budget estimate that checks itself against an optional target budget, AI-generated packing lists/local tips/emergency info, and tabbed hotels/itinerary/restaurant sections.
@@ -25,7 +23,7 @@ Delivered in five phases plus targeted follow-ups, each scoped and verified inde
 - Migrated trip storage from browser-only `localStorage` to Firestore, bridging the existing Google sign-in into a real Firebase Auth session so security rules could enforce that a trip is only ever readable or writable by the account that created it — giving genuine cross-device sync where there was none before.
 - Deployed to Vercel with a connected GitHub repo for continuous deployment, and worked through the full chain of real production configuration this requires: Google Cloud API restrictions and referrer allowlists, OAuth authorized origins, and Firebase Authentication provider setup — debugging each with actual browser network traces rather than trial and error.
 
-**Result**
+
 A fully live, publicly deployed production application with every feature above working end-to-end, verified by driving the real deployed site rather than assuming it worked: successful Google sign-in, itinerary generation, cross-device Firestore-backed trip sync enforced by security rules, a clean accessibility audit, and zero console errors across the core pages. Along the way, several real bugs were found and fixed through this same verification-first approach — a voice-selector bug where TTS silently ignored the chosen voice, raw API error objects being dumped straight into the UI, and a trip-length validation gap that silently allowed invalid input.
 
 ---
