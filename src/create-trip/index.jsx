@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Check, Loader2, MapPin, Sparkles } from 'lucide-react'
-import { AI_PROMPT, SelectBudgetOptions, SelectTravelList, PopularDestinations } from '@/constants/option'
+import { SelectBudgetOptions, SelectTravelList, PopularDestinations } from '@/constants/option'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { createChatSession, getFriendlyAiErrorMessage } from '@/service/AIModal'
+import { generateTrip, getFriendlyAiErrorMessage } from '@/service/AIModal'
 import { FcGoogle } from 'react-icons/fc'
 import {
   Dialog,
@@ -30,6 +30,25 @@ const fadeUp = {
 
 const MAX_DAYS = 30
 const BUDGET_CURRENCY_KEY = 'tm_preferred_currency'
+
+export function validateTripForm(formData, maxDays = MAX_DAYS) {
+  const days = Number(formData?.noOfDays)
+  const invalid =
+    !formData?.location ||
+    !formData?.noOfDays ||
+    !Number.isInteger(days) ||
+    days < 1 ||
+    days > maxDays ||
+    !formData?.budget ||
+    !formData?.traveler
+
+  if (!invalid) return { valid: true, message: null }
+
+  return {
+    valid: false,
+    message: formData?.noOfDays && days > maxDays ? `Trips are limited to ${maxDays} days` : 'Please fill all the details',
+  }
+}
 
 const CreateTrip = () => {
   const routerLocation = useLocation()
@@ -71,38 +90,24 @@ const CreateTrip = () => {
       return
     }
 
-    const days = Number(formData?.noOfDays)
-    if (
-      !formData?.location ||
-      !formData?.noOfDays ||
-      !Number.isInteger(days) ||
-      days < 1 ||
-      days > MAX_DAYS ||
-      !formData?.budget ||
-      !formData.traveler
-    ) {
-      toast(formData?.noOfDays && days > MAX_DAYS ? `Trips are limited to ${MAX_DAYS} days` : 'Please fill all the details')
+    const { valid, message } = validateTripForm(formData)
+    if (!valid) {
+      toast(message)
       return
-    }
-
-    let FINAL_PROMPT = AI_PROMPT.replace('{location}', formData?.location)
-      .replace('{totalDays}', formData?.noOfDays)
-      .replace('{traveler}', formData?.traveler)
-      .replace('{budget}', formData?.budget)
-      .replace('{totalDays}', formData?.noOfDays)
-
-    const targetAmount = Number(formData?.targetBudgetAmount)
-    if (targetAmount > 0) {
-      FINAL_PROMPT += ` The traveler's target total budget for the entire trip (all days, hotel, and activities combined) is approximately ${targetAmount} ${formData.targetBudgetCurrency}. Please plan within this budget where realistically possible.`
     }
 
     setLoading(true)
 
-    let tripText
+    let tripData
     try {
-      const chatSession = createChatSession()
-      const result = await chatSession.sendMessage(FINAL_PROMPT)
-      tripText = result.response.text().replace(/^```json\s*|\s*```$/g, '')
+      tripData = await generateTrip({
+        location: formData?.location,
+        noOfDays: formData?.noOfDays,
+        budget: formData?.budget,
+        traveler: formData?.traveler,
+        targetBudgetAmount: formData?.targetBudgetAmount,
+        targetBudgetCurrency: formData?.targetBudgetCurrency,
+      })
     } catch (error) {
       console.error(error)
       toast(getFriendlyAiErrorMessage(error))
@@ -111,7 +116,7 @@ const CreateTrip = () => {
     }
 
     try {
-      await SaveAiTrip(tripText, activeUser)
+      await SaveAiTrip(tripData, activeUser)
     } catch (error) {
       console.error(error)
       toast(
@@ -123,11 +128,11 @@ const CreateTrip = () => {
     }
   }
 
-  const SaveAiTrip = async (TripData, activeUser) => {
+  const SaveAiTrip = async (tripData, activeUser) => {
     const docId = Date.now().toString()
     await saveTrip({
       userSelection: formData,
-      tripData: JSON.parse(TripData),
+      tripData,
       userEmail: activeUser?.email,
       ownerUid: activeUser?.uid,
       id: docId,

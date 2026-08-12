@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { GetPlaceDetails, PHOTO_REF_URL } from './GlobalApi'
+import { GetPlaceDetails } from './GlobalApi'
 
 const CACHE_PREFIX = 'tm_img_cache_v1:'
 const memoryCache = new Map()
@@ -58,10 +58,9 @@ async function fetchWikimediaImages(query, limit) {
 }
 
 async function fetchGooglePlacePhotos(query, limit) {
-  if (!import.meta.env.VITE_GOOGLE_PLACE_API_KEY) return []
   const res = await GetPlaceDetails({ textQuery: query })
-  const photos = res?.data?.places?.[0]?.photos || []
-  return photos.slice(0, limit).map((photo) => PHOTO_REF_URL.replace('{NAME}', photo.name))
+  const photoUrls = res?.data?.photoUrls || []
+  return photoUrls.slice(0, limit)
 }
 
 export async function getDestinationImages(query, count = 6) {

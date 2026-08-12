@@ -87,10 +87,13 @@ npm run dev
 
 ### Required environment variables
 
+Gemini and the Places "search + photo" lookup run behind serverless functions under `/api`, so their API keys are **server-only** and never shipped to the browser. The Places JS map loader and address autocomplete still run client-side (that's inherent to how the Google Maps JS API works), so a separate, `VITE_`-prefixed Places key stays client-side too — restrict it by HTTP referrer in Google Cloud Console since it's necessarily visible in the page.
+
+**Client (`.env`, `VITE_` prefix — inlined into the browser bundle):**
+
 ```txt
 VITE_GOOGLE_AUTH_CLIENT_ID=
 VITE_GOOGLE_PLACE_API_KEY=
-VITE_GOOGLE_GEMINI_AI_API_KEY=
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
@@ -98,6 +101,13 @@ VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
+```
+
+**Server-only (no `VITE_` prefix — set in Vercel's Environment Variables settings, or locally in `.env` for `/api` functions during local dev):**
+
+```txt
+GOOGLE_GEMINI_AI_API_KEY=
+GOOGLE_PLACE_API_KEY=
 ```
 
 ### Google Cloud & Firebase setup (required for a working deploy)
@@ -129,10 +139,12 @@ This app touches enough Google services that getting a fresh environment fully w
 
 1. User signs in with Google (bridged into a Firebase Auth session).
 2. User picks a destination, trip length, budget, and travelers on the Create Trip page.
-3. Gemini generates a structured JSON itinerary — hotels, day-by-day plan, pricing, ratings.
+3. The client calls `/api/generate-trip`, a Vercel serverless function that builds the prompt, calls Gemini with the server-only key, and returns the parsed itinerary JSON — hotels, day-by-day plan, pricing, ratings. Gemini's API key never reaches the browser.
 4. The trip is saved to Firestore, owned by the signed-in user's UID.
-5. The trip page loads real images, live weather, a Google Map, and a budget estimate, then makes one additional Gemini call to generate packing/tips/restaurants/emergency info (cached back onto the trip so it's only generated once).
-6. The Trip Assistant lets the user ask follow-up questions in a real streaming conversation, with optional voice input/output, and that conversation is persisted to the same trip document.
+5. The trip page loads real images (via `/api/places-search`, which proxies the Places "text search + photo" lookup), live weather, a Google Map, and a budget estimate, then calls `/api/generate-trip-extras` once to generate packing/tips/restaurants/emergency info (cached back onto the trip so it's only generated once).
+6. The Trip Assistant lets the user ask follow-up questions in a real streaming conversation (proxied through `/api/trip-assistant`, which streams the Gemini response back chunk by chunk), with optional voice input/output, and that conversation is persisted to the same trip document.
+
+**Client → serverless proxy → Gemini/Places/Firestore:** the browser never holds a Gemini key, and only holds a Places key scoped to the client-side Maps loader and autocomplete (not the search/photo lookup, which is server-only). See `api/generate-trip.js`, `api/trip-assistant.js`, `api/generate-trip-extras.js`, and `api/places-search.js`, all backed by shared logic in `api/_lib/`.
 
 ---
 

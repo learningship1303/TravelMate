@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { Check, Copy, Mic, Pause, Play, Send, Square, Volume2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { createAssistantSession, getFriendlyAiErrorMessage } from '@/service/AIModal'
+import { streamAssistantReply, getFriendlyAiErrorMessage } from '@/service/AIModal'
 import { updateTrip } from '@/service/tripStorage'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis'
@@ -55,8 +55,6 @@ function TripAssistant({ trip }) {
   const [streamingText, setStreamingText] = useState('')
   const [copiedId, setCopiedId] = useState('')
 
-  const sessionRef = useRef(null)
-  const sessionTripIdRef = useRef(null)
   const activeLanguageRef = useRef(language)
   const listRef = useRef(null)
 
@@ -109,10 +107,6 @@ function TripAssistant({ trip }) {
   }, [messages, streamingText])
 
   useEffect(() => {
-    if (!trip?.id) return
-    if (sessionTripIdRef.current === trip.id && sessionRef.current) return
-    sessionRef.current = createAssistantSession(trip, trip?.assistant?.messages || [], currentLanguageMeta.label)
-    sessionTripIdRef.current = trip.id
     activeLanguageRef.current = language
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id])
@@ -128,7 +122,7 @@ function TripAssistant({ trip }) {
 
   const sendMessage = async (rawText, { fromVoice = false } = {}) => {
     const text = rawText.trim()
-    if (!text || !trip?.tripData || !sessionRef.current || isStreaming) return
+    if (!text || !trip?.tripData || isStreaming) return
 
     setInput('')
     const userMessage = { id: createId(), role: 'user', text, fromVoice, timestamp: Date.now() }
@@ -142,15 +136,23 @@ function TripAssistant({ trip }) {
       activeLanguageRef.current = language
     }
 
+    const tripContext = {
+      userSelection: {
+        location: trip?.userSelection?.location,
+        noOfDays: trip?.userSelection?.noOfDays,
+        budget: trip?.userSelection?.budget,
+        traveler: trip?.userSelection?.traveler,
+      },
+      tripData: {
+        hotel_options: trip?.tripData?.hotel_options,
+        itinerary: trip?.tripData?.itinerary,
+      },
+    }
+
     setIsStreaming(true)
     setStreamingText('')
     try {
-      const result = await sessionRef.current.sendMessageStream(outgoingText)
-      let full = ''
-      for await (const chunk of result.stream) {
-        full += chunk.text()
-        setStreamingText(full)
-      }
+      const full = await streamAssistantReply(tripContext, messages, currentLanguageMeta.label, outgoingText, setStreamingText)
       const cleaned = full.replace(/[*#`]/g, '').trim()
       const assistantMessage = { id: createId(), role: 'model', text: cleaned, timestamp: Date.now() }
       const finalMessages = [...withUserMessage, assistantMessage]

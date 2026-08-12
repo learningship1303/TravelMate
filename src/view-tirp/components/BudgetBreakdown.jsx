@@ -12,6 +12,12 @@ function parseFirstNumber(text) {
   return match ? Number.parseFloat(match[1]) : null
 }
 
+export function computeBudgetVerdict(total, target) {
+  if (target == null || total == null) return null
+  const difference = target - total
+  return { difference, isOverBudget: difference < 0 }
+}
+
 function estimateBudget(trip) {
   const days = Number(trip?.userSelection?.noOfDays) || 1
   const hotels = trip?.tripData?.hotel_options || []
@@ -81,7 +87,8 @@ function BudgetBreakdown({ trip }) {
   const hasTarget = targetAmount > 0 && Boolean(targetCurrencyCode)
   const convertedTarget =
     hasTarget && rates ? convertAmount(targetAmount, targetCurrencyCode, targetCurrency, rates) : null
-  const difference = convertedTarget != null && hasValues ? convertedTarget - total : null
+  const verdict = convertedTarget != null && hasValues ? computeBudgetVerdict(total, convertedTarget) : null
+  const difference = verdict?.difference ?? null
 
   return (
     <Card className="shadow-soft h-full">
