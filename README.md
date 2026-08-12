@@ -66,7 +66,7 @@ A fully live, publicly deployed production application with every feature above 
 ## Tech Stack
 
 - **Frontend:** React 18, Vite, React Router, Tailwind CSS v4, Framer Motion, Radix UI primitives
-- **AI:** Google Gemini (`@google/generative-ai`) — itinerary generation, trip extras, and the streaming conversational assistant
+- **AI:** Google Gemini (`@google/genai`), called from Vercel serverless functions under `/api` — itinerary generation, trip extras, and the streaming conversational assistant
 - **Data & Auth:** Firebase Firestore (trip storage) + Firebase Auth bridged from Google Sign-In (`@react-oauth/google`)
 - **Maps & Places:** Google Maps JavaScript API, Google Places API (New)
 - **Other APIs:** Open-Meteo (weather, free/no key), Wikimedia Commons (destination imagery, free/no key), open.er-api.com (currency exchange rates, free/no key)
