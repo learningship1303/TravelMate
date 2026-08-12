@@ -30,6 +30,8 @@ export default async function handler(req, res) {
     })
 
     if (!placesRes.ok) {
+      const errorBody = await placesRes.text().catch(() => '<unreadable body>')
+      console.error('Places search upstream error', placesRes.status, placesRes.statusText, errorBody)
       res.status(502).json({ message: 'Unable to fetch place photos right now.' })
       return
     }
